@@ -1,0 +1,10 @@
+node_modules/
+src-tauri/target/
+src/vendor/
+*.log
+.DS_Store
+# ROMs: nunca al repositorio
+roms/*
+!roms/.gitkeep
+*.nes
+*.zip
