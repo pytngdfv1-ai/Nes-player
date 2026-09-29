@@ -58,10 +58,13 @@
 
   // Arrastrar y soltar: se usa la API oficial de ventana de Tauri (más fiable que
   // escuchar a mano el evento interno "tauri://drag-drop", que en la primera versión
-  // no llegaba nunca al listener genérico).
+  // no llegaba nunca al listener genérico). Se registra ya mismo (sin esperar a
+  // DOMContentLoaded: este script va al final de <body>, así que ese evento ya pasó
+  // por el momento en que se ejecuta este archivo; esperarlo dejaba el listener sin
+  // registrarse nunca, que era el motivo real de que no funcionara).
   const ROM_EXT = ['.nes', '.zip'];
   const isRom = (p) => ROM_EXT.some((ext) => p.toLowerCase().endsWith(ext));
-  window.addEventListener('DOMContentLoaded', async () => {
+  (async () => {
     const dropEl = document.getElementById('dropzone');
     const getWin = (window.__TAURI__.webviewWindow && window.__TAURI__.webviewWindow.getCurrentWebviewWindow)
       || (window.__TAURI__.window && window.__TAURI__.window.getCurrentWindow);
@@ -74,5 +77,5 @@
         if (rom) window.nes.openRomPath(rom);
       }
     });
-  });
+  })();
 })();
