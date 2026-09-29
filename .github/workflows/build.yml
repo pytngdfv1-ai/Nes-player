@@ -1,0 +1,74 @@
+name: Build Windows (Tauri)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cachear compilación de Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Regenerar icono desde assets/icon-source.png (si existe)
+        shell: bash
+        run: |
+          if [ -f assets/icon-source.png ]; then
+            pip install pillow
+            npm run make-icon --silent
+          else
+            echo "Sin assets/icon-source.png: se usan los .ico ya presentes."
+          fi
+
+      - name: Instalar dependencias de Node
+        run: npm ci
+
+      - name: Preparar EmulatorJS (motor + core nes/fceumm, local)
+        run: npm run prepare-emulator
+
+      - name: Compilar con Tauri (genera el instalador NSIS)
+        run: npm run build
+
+      - name: Localizar artefactos
+        id: find
+        shell: pwsh
+        run: |
+          $nsis = Get-ChildItem -Recurse -Path src-tauri/target/release/bundle/nsis -Filter *.exe | Select-Object -First 1
+          $raw  = Get-ChildItem -Path src-tauri/target/release -Filter nes-player.exe | Select-Object -First 1
+          Copy-Item $raw.FullName "NES-Player-Portable.exe"
+          Get-ChildItem $nsis.FullName, "NES-Player-Portable.exe" | Select-Object Name, @{n='MB';e={[math]::Round($_.Length/1MB,1)}}
+          echo "nsis_path=$($nsis.FullName)" >> $env:GITHUB_OUTPUT
+
+      - name: Subir instalador (NSIS)
+        uses: actions/upload-artifact@v4
+        with:
+          name: NES-Player-Setup
+          path: ${{ steps.find.outputs.nsis_path }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Subir ejecutable "portable"
+        uses: actions/upload-artifact@v4
+        with:
+          name: NES-Player-Portable
+          path: NES-Player-Portable.exe
+          if-no-files-found: error
+          retention-days: 14
