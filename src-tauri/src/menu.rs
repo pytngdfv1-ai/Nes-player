@@ -8,7 +8,7 @@ use std::path::Path;
 use tauri::menu::{CheckMenuItem, IsMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{AppHandle, Emitter, Manager};
 
-fn action_item(app: &AppHandle, id: &str, label: &str, accel: Option<&str>) -> MenuItem {
+fn action_item(app: &AppHandle, id: &str, label: &str, accel: Option<&str>) -> MenuItem<tauri::Wry> {
     MenuItem::with_id(app, id, label, true, accel).expect("menu item")
 }
 
@@ -17,11 +17,11 @@ pub fn rebuild(app: &AppHandle, cfg: &AppConfig) {
     let _ = app.set_menu(menu);
 }
 
-fn build(app: &AppHandle, cfg: &AppConfig) -> tauri::Result<Menu> {
+fn build(app: &AppHandle, cfg: &AppConfig) -> tauri::Result<Menu<tauri::Wry>> {
     // ---- Archivo ----
     let open = action_item(app, "open", "Abrir ROM…", Some("CmdOrCtrl+O"));
 
-    let recent_items: Vec<MenuItem> = if cfg.recent.is_empty() {
+    let recent_items: Vec<MenuItem<tauri::Wry>> = if cfg.recent.is_empty() {
         vec![MenuItem::with_id(app, "recent-empty", "(vacío)", false, None::<&str>)?]
     } else {
         cfg.recent
@@ -49,7 +49,7 @@ fn build(app: &AppHandle, cfg: &AppConfig) -> tauri::Result<Menu> {
     let save_state = action_item(app, "save-state", "Guardar estado", None);
     let load_state = action_item(app, "load-state", "Cargar estado", None);
 
-    let slot_items: Vec<CheckMenuItem> = (1..=SLOTS)
+    let slot_items: Vec<CheckMenuItem<tauri::Wry>> = (1..=SLOTS)
         .map(|n| {
             CheckMenuItem::with_id(app, format!("slot:{n}"), format!("Ranura {n}"), true, cfg.slot == n, None::<&str>)
                 .expect("menu item")
