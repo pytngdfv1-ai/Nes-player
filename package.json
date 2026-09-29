@@ -1,0 +1,21 @@
+{
+  "name": "nes-player-tauri",
+  "productName": "NES Player",
+  "version": "1.0.0",
+  "description": "Reproductor de ROMs de NES para Windows (Tauri + EmulatorJS, core nes/fceumm)",
+  "private": true,
+  "license": "UNLICENSED",
+  "author": "Uso personal",
+  "scripts": {
+    "prepare-emulator": "node scripts/prepare-emulatorjs.js",
+    "make-icon": "python scripts/make_icon.py && node -e \"require('fs').copyFileSync('assets/icon.ico','src-tauri/icons/icon.ico')\"",
+    "tauri": "tauri",
+    "dev": "npm run prepare-emulator && tauri dev",
+    "build": "npm run prepare-emulator && tauri build"
+  },
+  "devDependencies": {
+    "@emulatorjs/core-fceumm": "4.2.3",
+    "@emulatorjs/emulatorjs": "4.2.3",
+    "@tauri-apps/cli": "^2.12.0"
+  }
+}
