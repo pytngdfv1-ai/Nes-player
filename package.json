@@ -1,0 +1,24 @@
+{
+  "name": "nes-player",
+  "productName": "NES Player",
+  "version": "1.0.0",
+  "description": "Reproductor de ROMs de NES para Windows (Electron + EmulatorJS, core nes/fceumm)",
+  "main": "main.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "author": "Uso personal",
+  "scripts": {
+    "prepare-emulator": "node scripts/prepare-emulatorjs.js",
+    "make-icon": "python scripts/make_icon.py",
+    "start": "npm run prepare-emulator && electron .",
+    "start:fast": "electron .",
+    "test": "node scripts/test-config.js",
+    "dist": "npm run prepare-emulator && electron-builder --win --x64 --publish never"
+  },
+  "devDependencies": {
+    "@emulatorjs/core-fceumm": "4.2.3",
+    "@emulatorjs/emulatorjs": "4.2.3",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  }
+}

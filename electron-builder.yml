@@ -1,0 +1,35 @@
+appId: com.personal.nesplayer
+productName: NES Player
+copyright: Uso personal
+directories:
+  output: dist
+  buildResources: assets
+asar: true
+compression: maximum
+files:
+  - main.js
+  - preload.js
+  - lib/**/*
+  - src/**/*
+  - package.json
+  - "!**/*.map"
+extraResources:
+  - from: assets/icon.ico
+    to: icon.ico
+win:
+  icon: assets/icon.ico
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: NES Player
+  artifactName: NES-Player-Setup-${version}.${ext}
+portable:
+  artifactName: NES-Player-Portable-${version}.${ext}
