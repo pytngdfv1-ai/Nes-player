@@ -452,7 +452,8 @@ pub fn run() {
                     Ok(rom) => {
                         *app.state::<AppState>().pending_rom.lock().unwrap() = Some(rom);
                         if let Some(p) = &arg_rom {
-                            let mut c = app.state::<AppState>().config.lock().unwrap();
+                            let app_state = app.state::<AppState>();
+                            let mut c = app_state.config.lock().unwrap();
                             c.recent.retain(|r| r != p);
                             c.recent.insert(0, p.clone());
                             c.recent.truncate(config::MAX_RECENT);
