@@ -56,20 +56,23 @@
     on: (channel, cb) => { if (EVENTS.has(channel)) listeners.set(channel, cb); }
   };
 
-  // Arrastrar y soltar: Tauri lo captura a nivel de ventana (dragDropEnabled en
-  // tauri.conf.json), así que no llegan eventos HTML5 dragenter/dragover/drop.
-  // Se traduce aquí a las mismas señales visuales que usaba la versión Electron.
+  // Arrastrar y soltar: se usa la API oficial de ventana de Tauri (más fiable que
+  // escuchar a mano el evento interno "tauri://drag-drop", que en la primera versión
+  // no llegaba nunca al listener genérico).
   const ROM_EXT = ['.nes', '.zip'];
   const isRom = (p) => ROM_EXT.some((ext) => p.toLowerCase().endsWith(ext));
-  window.addEventListener('DOMContentLoaded', () => {
+  window.addEventListener('DOMContentLoaded', async () => {
     const dropEl = document.getElementById('dropzone');
-    listen('tauri://drag-enter', () => { if (dropEl) dropEl.hidden = false; });
-    listen('tauri://drag-leave', () => { if (dropEl) dropEl.hidden = true; });
-    listen('tauri://drag-drop', (e) => {
-      if (dropEl) dropEl.hidden = true;
-      const paths = (e.payload && e.payload.paths) || [];
-      const rom = paths.find(isRom);
-      if (rom) window.nes.openRomPath(rom);
+    const getWin = (window.__TAURI__.webviewWindow && window.__TAURI__.webviewWindow.getCurrentWebviewWindow)
+      || (window.__TAURI__.window && window.__TAURI__.window.getCurrentWindow);
+    if (!getWin) { console.error('nes: no se encontró la API de ventana de Tauri para arrastrar y soltar'); return; }
+    await getWin().onDragDropEvent((e) => {
+      const type = e.payload.type; // 'enter' | 'over' | 'drop' | 'leave'
+      if (dropEl) dropEl.hidden = !(type === 'enter' || type === 'over');
+      if (type === 'drop') {
+        const rom = (e.payload.paths || []).find(isRom);
+        if (rom) window.nes.openRomPath(rom);
+      }
     });
   });
 })();
