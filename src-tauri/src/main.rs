@@ -177,19 +177,29 @@ fn flush_done(state: State<'_, AppState>) {
     }
 }
 
-#[tauri::command]
-async fn rom_open_dialog(app: AppHandle) -> Result<(), String> {
-    let file = app
-        .dialog()
+/// Abre el selector de archivos del sistema, de forma no bloqueante (evita el problema de
+/// hilos de la variante `blocking_*` cuando se llama fuera del hilo principal de la interfaz,
+/// que en la primera versión dejaba el diálogo sin aparecer nunca).
+async fn pick_rom_path(app: &AppHandle) -> Option<String> {
+    let (tx, rx) = oneshot::channel();
+    app.dialog()
         .file()
         .add_filter("ROMs de NES (.nes, .zip)", &["nes", "zip"])
         .add_filter("Todos los archivos", &["*"])
         .set_title("Abrir ROM de NES")
-        .blocking_pick_file();
-    if let Some(f) = file {
-        if let Some(path) = f.as_path() {
-            open_rom(&app, path.to_string_lossy().to_string(), true).await?;
-        }
+        .pick_file(move |file| {
+            let _ = tx.send(file);
+        });
+    match rx.await {
+        Ok(Some(fp)) => fp.into_path().ok().map(|p| p.to_string_lossy().to_string()),
+        _ => None,
+    }
+}
+
+#[tauri::command]
+async fn rom_open_dialog(app: AppHandle) -> Result<(), String> {
+    if let Some(path) = pick_rom_path(&app).await {
+        open_rom(&app, path, true).await?;
     }
     Ok(())
 }
@@ -329,17 +339,8 @@ fn state_load(app: AppHandle, key: String, slot: i64) -> Result<Option<String>, 
 /// Igual que el comando `rom_open_dialog`, pero invocable directamente desde Rust
 /// (el clic de menú "Abrir ROM…" no pasa por el mecanismo `invoke`).
 pub(crate) async fn rom_open_dialog_internal(app: AppHandle) -> Result<(), String> {
-    let file = app
-        .dialog()
-        .file()
-        .add_filter("ROMs de NES (.nes, .zip)", &["nes", "zip"])
-        .add_filter("Todos los archivos", &["*"])
-        .set_title("Abrir ROM de NES")
-        .blocking_pick_file();
-    if let Some(f) = file {
-        if let Some(path) = f.as_path() {
-            open_rom(&app, path.to_string_lossy().to_string(), true).await?;
-        }
+    if let Some(path) = pick_rom_path(&app).await {
+        open_rom(&app, path, true).await?;
     }
     Ok(())
 }
