@@ -39,7 +39,7 @@ fn build(app: &AppHandle, cfg: &AppConfig) -> tauri::Result<Menu> {
             })
             .collect()
     };
-    let mut recent_refs: Vec<&dyn IsMenuItem> = recent_items.iter().map(|i| i as &dyn IsMenuItem).collect();
+    let mut recent_refs: Vec<&dyn IsMenuItem<tauri::Wry>> = recent_items.iter().map(|i| i as &dyn IsMenuItem<tauri::Wry>).collect();
     let sep1 = PredefinedMenuItem::separator(app)?;
     let clear_recent = MenuItem::with_id(app, "recent-clear", "Borrar lista", !cfg.recent.is_empty(), None::<&str>)?;
     recent_refs.push(&sep1);
@@ -55,7 +55,7 @@ fn build(app: &AppHandle, cfg: &AppConfig) -> tauri::Result<Menu> {
                 .expect("menu item")
         })
         .collect();
-    let slot_refs: Vec<&dyn IsMenuItem> = slot_items.iter().map(|i| i as &dyn IsMenuItem).collect();
+    let slot_refs: Vec<&dyn IsMenuItem<tauri::Wry>> = slot_items.iter().map(|i| i as &dyn IsMenuItem<tauri::Wry>).collect();
     let slot_menu = Submenu::with_items(app, "Ranura de estado", true, &slot_refs)?;
 
     let save_sram = action_item(app, "save-sram", "Guardar partida (SRAM) ahora", None);

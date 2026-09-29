@@ -474,7 +474,7 @@ pub fn run() {
                         if state.closing.swap(true, Ordering::SeqCst) {
                             return; // segunda vez: dejar que se cierre de verdad
                         }
-                        api.prevent_default();
+                        api.prevent_close();
                         let win3 = win2.clone();
                         tauri::async_runtime::spawn(async move {
                             request_flush(win3.app_handle()).await;
