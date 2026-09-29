@@ -1,4 +1,4 @@
-name: Build Windows (Tauri)
+name: Build Windows
 
 on:
   push:
@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"   # sin firma de código
     steps:
       - uses: actions/checkout@v4
 
@@ -20,55 +22,44 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Instalar Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cachear compilación de Rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-
       - name: Regenerar icono desde assets/icon-source.png (si existe)
         shell: bash
         run: |
           if [ -f assets/icon-source.png ]; then
             pip install pillow
-            npm run make-icon --silent
+            python scripts/make_icon.py
           else
-            echo "Sin assets/icon-source.png: se usan los .ico ya presentes."
+            echo "Sin assets/icon-source.png: se usa assets/icon.ico tal cual."
           fi
 
-      - name: Instalar dependencias de Node
+      - name: Instalar dependencias
         run: npm ci
+
+      - name: Pruebas de configuración
+        run: npm test
 
       - name: Preparar EmulatorJS (motor + core nes/fceumm, local)
         run: npm run prepare-emulator
 
-      - name: Compilar con Tauri (genera el instalador NSIS)
-        run: npm run build
+      - name: Empaquetar (instalador NSIS + portable)
+        run: npx electron-builder --win --x64 --publish never
 
-      - name: Localizar artefactos
-        id: find
+      - name: Tamaños
         shell: pwsh
-        run: |
-          $nsis = Get-ChildItem -Recurse -Path src-tauri/target/release/bundle/nsis -Filter *.exe | Select-Object -First 1
-          $raw  = Get-ChildItem -Path src-tauri/target/release -Filter nes-player.exe | Select-Object -First 1
-          Copy-Item $raw.FullName "NES-Player-Portable.exe"
-          Get-ChildItem $nsis.FullName, "NES-Player-Portable.exe" | Select-Object Name, @{n='MB';e={[math]::Round($_.Length/1MB,1)}}
-          echo "nsis_path=$($nsis.FullName)" >> $env:GITHUB_OUTPUT
+        run: Get-ChildItem dist -File | Select-Object Name, @{n='MB';e={[math]::Round($_.Length/1MB,1)}}
 
-      - name: Subir instalador (NSIS)
+      - name: Subir instalador
         uses: actions/upload-artifact@v4
         with:
           name: NES-Player-Setup
-          path: ${{ steps.find.outputs.nsis_path }}
+          path: dist/NES-Player-Setup-*.exe
           if-no-files-found: error
           retention-days: 14
 
-      - name: Subir ejecutable "portable"
+      - name: Subir portable
         uses: actions/upload-artifact@v4
         with:
           name: NES-Player-Portable
-          path: NES-Player-Portable.exe
+          path: dist/NES-Player-Portable-*.exe
           if-no-files-found: error
           retention-days: 14
